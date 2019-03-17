@@ -3,13 +3,13 @@ from setuptools import setup
 import sys
 import os
 
-version = '0.0.1'
+version = '0.0.2'
 
 setup(name = 'gazedata',
       version = version,
-      description = 'Module for gaze-data handling',
+      description = 'Module for pre-processing of gaze data',
       long_description = """
-This is a Python module to handle gaze data (eyetracking gata).
+This is a Python module to pre-process gaze data (eyetracking gata).
 DISCLAIMER: This is a beta version. No warranty.
 """,
       classifiers = [
@@ -23,9 +23,9 @@ DISCLAIMER: This is a beta version. No warranty.
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
       ],
-      keywords = 'Tobii, Eye tracking, eyetracking, gaze',
+      keywords = 'Tobii, eye-tracking, eyetracking, gaze, fixation',
       author = 'Kiri Kuroda',
-      url = 'https://github.com/kirikuroda/gazedata/',
+      url = 'https://github.com/kirikuroda/ppgaze/',
       licence = 'GNU GPL',
-      packages = ['gazedata'],
+      packages = ['ppgaze'],
       )

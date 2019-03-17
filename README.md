@@ -1,6 +1,6 @@
-# gazedata
+# ppgaze
 
-This is a Python module to handle gaze data (eyetracking data).
+This is a Python module for pre-processing of gaze data (eyetracking data).
 
 **DISCLAIMER: This is a beta version. No warranty.**
 
