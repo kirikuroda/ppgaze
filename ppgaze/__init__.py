@@ -68,13 +68,14 @@ class GazeData:
         
         self.filled = self.rawdata
         
-        for i in range(len(nonblinks)):
-            self.filled[1, (nonblinks[i,0]-1):(nonblinks[i,1]+1)] = x_linspace[i]
-            self.filled[2, (nonblinks[i,0]-1):(nonblinks[i,1]+1)] = y_linspace[i]
-            self.filled[3, (nonblinks[i,0]-1):(nonblinks[i,1]+1)] = pupil_linspace[i]
+        nonblinks = np.array([*map(lambda x: range(x[0]-1,x[1]+1), nonblinks)])
         
-        self.rawdata = pd.DataFrame(self.rawdata).T
-        self.rawdata.columns = ['time','x','y','pupil']
+        dim = 0
+        for i in nonblinks:
+            self.filled[1, i] = x_linspace[dim]
+            self.filled[2, i] = y_linspace[dim]
+            self.filled[3, i] = pupil_linspace[dim]
+            dim += 1
     
     
     def smooth_data(self):
@@ -164,8 +165,12 @@ class GazeData:
         ang_distance = np.array((diff_x**2 + diff_y**2)**0.5 / self.deg_size < self.maxangle)
         short_nonfixations = short_nonfixations[np.where(ang_distance==True)[0]]
         self.classified = copy.copy(self.smoothed)
-        for i in range(len(short_nonfixations)):
-            self.classified.loc[short_nonfixations[i,0]:short_nonfixations[i,1], 'gaze'] = 'fixation'
+        
+        short_nonfixations = np.array([*map(lambda x: range(x[0],x[1]), short_nonfixations)])
+        gaze = np.array(self.classified['gaze'])
+        for i in short_nonfixations:
+            gaze[i] = 'fixation'
+        self.classified['gaze'] = gaze
     
     def discard_fixations(self):
         
@@ -188,9 +193,12 @@ class GazeData:
         # detect short fixations
         short_fixations = np.array([starts[(ends-starts < minduration)],
                                     ends[(ends-starts < minduration)]]).T
+        short_fixations = np.array([*map(lambda x: range(x[0],x[1]), short_fixations)])
         
-        for i in range(len(short_fixations)):
-            self.classified.loc[short_fixations[i,0]:short_fixations[i,1], 'gaze'] = 'saccade'
+        gaze = np.array(self.classified['gaze'])
+        for i in short_fixations:
+            gaze[i] = 'saccade'
+        self.classified['gaze'] = gaze
         
     
     # classify gaze data into fixation, saccade, or blink
