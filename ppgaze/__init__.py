@@ -16,10 +16,10 @@ class GazeData:
                                  np.array(pupil)],
                                  dtype='float')
         self.freq = freq # sampling frequency (Hz)
-        self.width = width # pixels
-        self.height = height # pixels
-        self.size = size # inch
-        self.distance = distance # cm
+        self.width = width # monitor width (pix)
+        self.height = height # monitor height (pix)
+        self.size = size # monitor size (inch)
+        self.distance = distance # viewing distance (cm)
         self.missing = missing # coding of NaN
         self.maxgap = maxgap # max gap length (ms)
         self.window_smooth = window_smooth # size of window function
@@ -125,7 +125,7 @@ class GazeData:
             np.array(self.smoothed['x'] - self.smoothed['x'].shift(window_velocity))
         diff_y = \
             np.array(self.smoothed['y'] - self.smoothed['y'].shift(window_velocity))
-        ang_velocity = ((diff_x**2 + diff_y**2)**0.5) / self.deg_size * self.freq
+        ang_velocity = (((diff_x**2 + diff_y**2)**0.5) / self.deg_size) * (1000 / self.window_velocity)
         ang_velocity[np.isnan(ang_velocity)] = 0
         self.smoothed['ang_velocity'] = ang_velocity
         self.smoothed['gaze'] = 'blink'
