@@ -24,11 +24,11 @@ class GazeData:
         self.maxgap = maxgap # max gap length (ms)
         self.window_smooth = window_smooth # size of window function
         self.smooth = smooth # 'average' or 'median'
-        self.window_velocity = window_velocity # size of window function (samples)
+        self.window_velocity = window_velocity # size of window function (ms)
         self.threshold = threshold # velocity threshold (deg/s)
-        self.maxinterval = maxinterval # max interval between fixations
-        self.maxangle = maxangle # max angle between fixations
-        self.minduration = minduration # minimum duration of fixations
+        self.maxinterval = maxinterval # max interval between fixations (ms)
+        self.maxangle = maxangle # max angle between fixations (deg/s)
+        self.minduration = minduration # minimum duration of fixations (ms)
     
     
     def fill_nan(self):
@@ -50,7 +50,7 @@ class GazeData:
         elif len(starts) > len(ends):
             ends = np.insert(ends, -1, len(self.rawdata[1])-1)
         
-        # convert millisecond to frequency
+        # convert millisecond to samples
         maxgap = (self.maxgap / 1000) * self.freq
         
         # detect nonblink data
@@ -96,7 +96,7 @@ class GazeData:
             raise ValueError("This smoothing method ({}) is not supported: 'smooth' accepts 'median' or 'average.'".format(self.smooth))
         
         # modify timestamp
-        self.smoothed.loc[:,'time'] = self.filled.loc[:,'time']
+        self.smoothed['time'] = self.filled['time']
         
     
     def pix2deg(self):
@@ -106,7 +106,7 @@ class GazeData:
         '''
         
         # calculate the pixel size in mm
-        self.pix_size = self.window_smooth * 25.4 / (self.width**2 + self.height**2)**0.5
+        self.pix_size = self.size * 25.4 / (self.width**2 + self.height**2)**0.5
         
         # calculate one visual angle in pixel
         self.deg_size = self.distance * 10 * math.tan(math.radians(1)) / self.pix_size
@@ -121,9 +121,11 @@ class GazeData:
         # convert the window length from mm to samples
         window_velocity = round(self.window_velocity / 1000 * self.freq)
         
-        diff_x = self.smoothed['x'] - self.smoothed['x'].shift(window_velocity)
-        diff_y = self.smoothed['y'] - self.smoothed['y'].shift(window_velocity)
-        ang_velocity = (diff_x**2 + diff_y**2)**0.5 / self.deg_size * self.freq
+        diff_x = \
+            np.array(self.smoothed['x'] - self.smoothed['x'].shift(window_velocity))
+        diff_y = \
+            np.array(self.smoothed['y'] - self.smoothed['y'].shift(window_velocity))
+        ang_velocity = ((diff_x**2 + diff_y**2)**0.5) / self.deg_size * self.freq
         ang_velocity[np.isnan(ang_velocity)] = 0
         self.smoothed['ang_velocity'] = ang_velocity
         self.smoothed['gaze'] = 'blink'
