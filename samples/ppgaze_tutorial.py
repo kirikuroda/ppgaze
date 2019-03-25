@@ -18,10 +18,9 @@ data = ppgaze.GazeData(time = times_in_your_data,
                        freq = 300)
 
 # Classify data into fixation, saccade, or blink.
-# This may take several minutes.
-# classify_gaze() returns classified data.
+# This class has two classification methods: velocity_filter() and dispersion_filter()
 # Classified data is saved as data.classified
-data.classify_gaze()
+data.velocity_filter()
 
 # Check the subject fixate on the AOI(s)
 # Specify AOIs as dictionary type object.
