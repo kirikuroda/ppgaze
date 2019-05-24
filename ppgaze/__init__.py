@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 
 class GazeData:
-    
+
     def __init__(self, time, x, y, pupil, freq,
-                 width=1920, height=1080, size=23.8, distance=60, 
+                 width=1920, height=1080, size=23.8, distance=60,
                  missing='nan', maxgap=75, win_smooth=3, smooth='median'):
-        
+
         self.rawdata = np.array([np.array(time),
                                  np.array(x),
                                  np.array(y),
@@ -23,14 +23,14 @@ class GazeData:
         self.maxgap = maxgap # max gap length (ms)
         self.win_smooth = win_smooth # size of window function
         self.smooth = smooth # 'average' or 'median'
-        
-    
+
+
     def fill_nan(self):
-        
+
         '''
         Fill the missing value (nan)
         '''
-        
+
         # detect areas of the missing data
         if self.missing == 'nan':
             miss = np.array(np.isnan(self.rawdata[1]), dtype=int)
@@ -47,14 +47,14 @@ class GazeData:
             if ends[0] < starts[0]:
                 starts = np.delete(starts, -1)
                 ends = np.delete(ends, 0)
-        
+
         # convert millisecond to samples
         maxgap = (self.maxgap / 1000) * self.freq
-        
+
         # detect nonblink data
         nonblinks = np.array([starts[(ends-starts < maxgap)],
                               ends[(ends-starts < maxgap)]]).T
-        
+
         # fill the missing data, except for blinks
         # with linear interpolation
         x_linspace = \
@@ -63,11 +63,11 @@ class GazeData:
             np.array([*map(lambda x: np.linspace(self.rawdata[2,x[0]-1],self.rawdata[2,x[1]],x[1]-x[0]+2), nonblinks)])
         pupil_linspace = \
             np.array([*map(lambda x: np.linspace(self.rawdata[3,x[0]-1],self.rawdata[3,x[1]],x[1]-x[0]+2), nonblinks)])
-        
+
         self.filled = self.rawdata
-        
+
         nonblinks = np.array([*map(lambda x: range(x[0]-1,x[1]+1), nonblinks)])
-        
+
         dim = 0
         if len(nonblinks) > 0:
             for i in nonblinks:
@@ -77,17 +77,17 @@ class GazeData:
                 dim += 1
         else:
             pass
-        
-    
+
+
     def smooth_data(self):
-        
+
         '''
         Smooth data: Moving median or average
         '''
-        
+
         self.filled = pd.DataFrame(self.filled).T
         self.filled.columns = ['time','x','y','pupil']
-        
+
         # noise reduction (moving median or average)
         if self.smooth == 'median':
             self.smoothed = self.filled.rolling(window=self.win_smooth).median()
@@ -95,34 +95,34 @@ class GazeData:
             self.smoothed = self.filled.rolling(window=self.win_smooth).mean()
         else:
             raise ValueError("This smoothing method ({}) is not supported: 'smooth' accepts 'median' or 'average.'".format(self.smooth))
-        
+
         # modify timestamp
         self.smoothed['time'] = self.filled['time']
-        
-    
+
+
     def pix2deg(self):
-        
+
         '''
         Convert pixel to degree
         '''
-        
+
         # calculate the pixel size in mm
         self.pix_size = self.size * 25.4 / (self.width**2 + self.height**2)**0.5
-        
+
         # calculate one visual angle in pixel
         self.deg_size = self.distance * 10 * math.tan(math.radians(1)) / self.pix_size
-    
-    
+
+
     def calculate_velocity(self):
-        
+
         '''
         Velocity-based filter
         Calculate the angular velocity between samples
         '''
-        
+
         # convert the window length from mm to samples
         win_velocity = round(self.win_velocity / 1000 * self.freq)
-        
+
         diff_x = \
             np.array(self.smoothed['x'] - self.smoothed['x'].shift(win_velocity))
         diff_y = \
@@ -135,17 +135,17 @@ class GazeData:
                           (self.smoothed['ang_velocity'] < self.threshold_velocity), 'gaze'] = 'fixation'
         self.smoothed.loc[self.smoothed['ang_velocity'] >= self.threshold_velocity, 'gaze'] = 'saccade'
         self.smoothed.loc[self.smoothed['ang_velocity'] == 0, ['x','y','pupil']] = np.nan
-        
-    
+
+
     def calculate_dispersion(self):
-        
+
         '''
         Dispersion-based filter
         '''
-        
-        gaze_pos = np.array([np.array(self.smoothed['x']), 
+
+        gaze_pos = np.array([np.array(self.smoothed['x']),
                              np.array(self.smoothed['y'])])
-        
+
         min_win_dispersion = round(self.win_dispersion / 1000 * self.freq)
         win_dispersion = round(self.win_dispersion / 1000 * self.freq)
         start = 0
@@ -159,7 +159,7 @@ class GazeData:
                 diff_x = np.max(gaze_pos[0,start:end])-np.min(gaze_pos[0,start:end])
                 diff_y = np.max(gaze_pos[1,start:end])-np.min(gaze_pos[1,start:end])
                 dispersion = (diff_x + diff_y) / self.deg_size
-                
+
                 if dispersion < self.threshold_dispersion:
                     if end == data_length:
                         gaze[start:end+1] = ['fixation']*(end-start+1)
@@ -185,16 +185,16 @@ class GazeData:
         self.smoothed['x_fixation'] = gaze_pos[0,:]
         self.smoothed['y_fixation'] = gaze_pos[1,:]
         self.smoothed['gaze'] = gaze
-        
-    
+
+
     def merge_fixations(self):
-        
+
         '''
         Merge adjacent fixations
         '''
-        
+
         nonfixations = np.array(self.smoothed['gaze']!='fixation', dtype=int)
-        
+
         diff = np.diff(nonfixations)
         starts = np.where(diff==1)[0] + 1
         ends = np.where(diff==-1)[0] + 1
@@ -206,14 +206,14 @@ class GazeData:
             if ends[0] < starts[0]:
                 starts = np.delete(starts, -1)
                 ends = np.delete(ends, 0)
-        
+
         # convert the max interval from mm to samples
         maxinterval = (self.maxinterval / 1000) * self.freq
-        
+
         # detect too short saccades
         short_nonfixations = np.array([starts[(ends-starts < maxinterval)],
                                        ends[(ends-starts < maxinterval)]]).T
-        
+
         # calculate angular distance between fixations
         diff_x = \
             np.array(self.smoothed['x'][short_nonfixations[:,1]]) - \
@@ -223,25 +223,35 @@ class GazeData:
             np.array(self.smoothed['y'][short_nonfixations[:,0]-1])
         ang_distance = np.array((diff_x**2 + diff_y**2)**0.5 / self.deg_size < self.maxangle)
         short_nonfixations = short_nonfixations[np.where(ang_distance==True)[0]]
-        
+
         self.classified = copy.copy(self.smoothed)
-        
+
         gaze = np.array(self.classified['gaze'])
         if len(short_nonfixations) > 0:
             short_nonfixations = np.array([*map(lambda x: range(x[0],x[1]), short_nonfixations)])
+            x = np.array(self.classified['x'])
+            y = np.array(self.classified['y'])
             for i in range(len(short_nonfixations)):
                 gaze[short_nonfixations[i]] = 'fixation'
+                x[short_nonfixations[i]] = np.linspace(self.smoothed['x'][short_nonfixations[i,0]-1],
+                                                       self.smoothed['x'][short_nonfixations[i,1]+1]),
+                                                       short_nonfixations[i,1] - short_nonfixations[i,0] + 1])
+                y[short_nonfixations[i]] = np.linspace(self.smoothed['y'][short_nonfixations[i,0]-1],
+                                                       self.smoothed['y'][short_nonfixations[i,1]+1]),
+                                                       short_nonfixations[i,1] - short_nonfixations[i,0] + 1])
             self.classified['gaze'] = gaze
+            self.classified['x'] = x
+            self.classified['y'] = y
         else:
             pass
-        
-    
+
+
     def discard_fixations(self):
-        
+
         '''
         Discard short fixations
         '''
-        
+
         fixations = np.array(self.classified['gaze']=='fixation', dtype=int)
         diff = np.diff(fixations)
         starts = np.where(diff==1)[0] + 1
@@ -254,26 +264,26 @@ class GazeData:
             if ends[0] < starts[0]:
                 starts = np.delete(starts, -1)
                 ends = np.delete(ends, 0)
-        
+
         # convert min duration from ms to samples
         minduration = (self.minduration / 1000) * self.freq
-        
+
         # detect short fixations
         short_fixations = np.array([starts[(ends-starts < minduration)],
                                     ends[(ends-starts < minduration)]]).T
-        
+
         short_fixations = np.array([*map(lambda x: range(x[0],x[1]), short_fixations)])
-        
+
         gaze = np.array(self.classified['gaze'])
-        
+
         if len(short_fixations) > 0:
             for i in short_fixations:
                 gaze[i] = 'saccade'
             self.classified['gaze'] = gaze
-        
-    
-    
-    def velocity_filter(self, threshold_velocity=30, win_velocity=20, maxinterval=75, 
+
+
+
+    def velocity_filter(self, threshold_velocity=30, win_velocity=20, maxinterval=75,
                         maxangle=0.5, minduration=60):
         self.threshold_velocity = threshold_velocity
         self.win_velocity = win_velocity
@@ -287,8 +297,8 @@ class GazeData:
         self.merge_fixations()
         self.discard_fixations()
         return self.classified
-    
-    def dispersion_filter(self, threshold_dispersion = 1.0, win_dispersion=100, 
+
+    def dispersion_filter(self, threshold_dispersion = 1.0, win_dispersion=100,
                           maxinterval=75, maxangle=0.5, minduration=60):
         self.threshold_dispersion = threshold_dispersion
         self.win_dispersion = win_dispersion
@@ -302,12 +312,12 @@ class GazeData:
         self.merge_fixations()
         self.discard_fixations()
         return self.classified
-    
+
     def analyze_aoi(self, aoi):
-        
+
         self.aoi = None
         self.gazedata = copy.copy(self.classified)
-        
+
         if type(aoi) == dict:
             aoi = pd.DataFrame(aoi).T
             aoi = aoi.reset_index()
@@ -315,20 +325,18 @@ class GazeData:
             self.aoi = aoi
         else:
             raise TypeError("'aoi' must be dictionary type.")
-        
+
         if all(self.aoi['right'] > self.aoi['left']) and all(self.aoi['top'] > self.aoi['bottom']):
             pass
         else:
             raise ValueError("Specify the points of AOI correctly: 'top', 'right', 'bottom', and 'left.'")
-        
+
         for i in self.aoi.index:
             self.gazedata[self.aoi.loc[i,'aoi_name']] = \
-                np.array(((self.gazedata.x > self.aoi.loc[i,'left']) & (self.gazedata.x < self.aoi.loc[i,'right'])) & 
-                         ((self.gazedata.y > self.aoi.loc[i,'bottom']) & (self.gazedata.y < self.aoi.loc[i,'top'])) & 
+                np.array(((self.gazedata.x > self.aoi.loc[i,'left']) & (self.gazedata.x < self.aoi.loc[i,'right'])) &
+                         ((self.gazedata.y > self.aoi.loc[i,'bottom']) & (self.gazedata.y < self.aoi.loc[i,'top'])) &
                          (self.gazedata.gaze == 'fixation'))
             self.gazedata[self.aoi.loc[i,'aoi_name']] = \
                 self.gazedata[self.aoi.loc[i,'aoi_name']].map({True: 'in', False: 'out'})
-        
+
         return self.gazedata
-
-

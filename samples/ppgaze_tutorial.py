@@ -12,8 +12,8 @@ import ppgaze
 # Initialize. your_data_xxxx must be an array-like data.
 # 'freq' indicates sampling frequency.
 data = ppgaze.GazeData(time = times_in_your_data,
-                       x = xs_in_your_data, 
-                       y = ys_in_your_data, 
+                       x = xs_in_your_data,
+                       y = ys_in_your_data,
                        pupil = pupils_in_your_data,
                        freq = 300)
 
@@ -30,4 +30,4 @@ data.analyze_aoi({'center':[100,100,-100,-100],
                'rightside':[100,400,-100,200]})
 
 # Save preprocessed data as a csv file.
-data.gazedata.to_csv('gazedata.csv', index=False, na_rep='NaN)
+data.gazedata.to_csv('gazedata.csv', index=False, na_rep='NaN')
