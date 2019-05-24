@@ -3,7 +3,7 @@ from setuptools import setup
 import sys
 import os
 
-version = '0.0.7'
+version = '0.0.8'
 
 setup(name = 'gazedata',
       version = version,
