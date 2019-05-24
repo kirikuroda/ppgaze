@@ -234,10 +234,10 @@ class GazeData:
             for i in range(len(short_nonfixations)):
                 gaze[short_nonfixations[i]] = 'fixation'
                 x[short_nonfixations[i]] = np.linspace(self.smoothed['x'][short_nonfixations[i,0]-1],
-                                                       self.smoothed['x'][short_nonfixations[i,1]+1]),
+                                                       self.smoothed['x'][short_nonfixations[i,1]+1],
                                                        short_nonfixations[i,1] - short_nonfixations[i,0] + 1])
                 y[short_nonfixations[i]] = np.linspace(self.smoothed['y'][short_nonfixations[i,0]-1],
-                                                       self.smoothed['y'][short_nonfixations[i,1]+1]),
+                                                       self.smoothed['y'][short_nonfixations[i,1]+1],
                                                        short_nonfixations[i,1] - short_nonfixations[i,0] + 1])
             self.classified['gaze'] = gaze
             self.classified['x'] = x
