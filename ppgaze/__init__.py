@@ -235,17 +235,16 @@ class GazeData:
                 gaze[short_nonfixations[i]] = 'fixation'
                 x[short_nonfixations[i]] = np.linspace(self.smoothed['x'][short_nonfixations[i][0]-1],
                                                        self.smoothed['x'][short_nonfixations[i][-1]+1],
-                                                       short_nonfixations[i][-1] - short_nonfixations[i][0] + 1)
+                                                       short_nonfixations[i][-1] - short_nonfixations[i][0] + 1)[1:-1]
                 y[short_nonfixations[i]] = np.linspace(self.smoothed['y'][short_nonfixations[i][0]-1],
                                                        self.smoothed['y'][short_nonfixations[i][-1]+1],
-                                                       short_nonfixations[i][-1] - short_nonfixations[i][0] + 1)
+                                                       short_nonfixations[i][-1] - short_nonfixations[i][0] + 1)[1:-1]
             self.classified['gaze'] = gaze
             self.classified['x'] = x
             self.classified['y'] = y
         else:
             pass
-
-
+    
     def discard_fixations(self):
 
         '''
